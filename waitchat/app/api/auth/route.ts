@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
     const { name } = parsed.data;
 
     // Check existing user or create new
-    let user = store.getUserByName(name);
+    let user = await store.getUserByName(name);
     if (!user) {
-      user = store.createUser(name);
+      user = await store.createUser(name);
     }
 
-    const token = store.createSession(user.id);
+    const token = await store.createSession(user.id);
 
     const response = NextResponse.json({ user, token });
     response.cookies.set('waitchat-session', token, {
@@ -51,10 +51,10 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get('waitchat-session')?.value;
   if (!token) return NextResponse.json({ user: null }, { status: 401 });
 
-  const userId = store.getUserIdFromSession(token);
+  const userId = await store.getUserIdFromSession(token);
   if (!userId) return NextResponse.json({ user: null }, { status: 401 });
 
-  const user = store.getUser(userId);
+  const user = await store.getUser(userId);
   if (!user) return NextResponse.json({ user: null }, { status: 401 });
 
   return NextResponse.json({ user });

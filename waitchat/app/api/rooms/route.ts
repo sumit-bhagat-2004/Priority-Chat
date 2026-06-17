@@ -8,24 +8,24 @@ const CreateRoomSchema = z.object({
   isGroup: z.boolean().default(true),
 });
 
-function getUserFromRequest(req: NextRequest) {
+async function getUserFromRequest(req: NextRequest) {
   const token = req.cookies.get('waitchat-session')?.value;
   if (!token) return null;
-  const userId = store.getUserIdFromSession(token);
+  const userId = await store.getUserIdFromSession(token);
   if (!userId) return null;
-  return store.getUser(userId);
+  return await store.getUser(userId);
 }
 
 export async function GET(req: NextRequest) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rooms = store.getAllRooms();
+  const rooms = await store.getAllRooms();
   return NextResponse.json({ rooms });
 }
 
 export async function POST(req: NextRequest) {
-  const user = getUserFromRequest(req);
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const room = store.createRoom(parsed.data.name, user.id, parsed.data.isGroup);
+    const room = await store.createRoom(parsed.data.name, user.id, parsed.data.isGroup);
     return NextResponse.json({ room }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
