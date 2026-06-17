@@ -192,6 +192,16 @@ export default function RoomPage() {
     );
   }
 
+  // Derive DM partner for display
+  const isDm = room !== null && room.isGroup === false;
+  const dmPartnerName = isDm && room && user
+    ? (() => {
+        // Room name is stored as "UserA & UserB"
+        const parts = room.name.split(' & ');
+        return parts.find(p => p.toLowerCase() !== user.name.toLowerCase()) ?? room.name;
+      })()
+    : undefined;
+
   return (
     <div style={{
       display: 'flex',
@@ -211,8 +221,10 @@ export default function RoomPage() {
           roomName={room?.name}
           onMenuClick={() => setSidebarOpen(true)}
           onSettingsClick={() => setSettingsOpen(s => !s)}
-          memberCount={room?.memberIds?.length}
+          memberCount={isDm ? undefined : room?.memberIds?.length}
           connectionStatus={status}
+          isDm={isDm}
+          dmPartnerName={dmPartnerName}
         />
 
         {/* Messages + hold mechanic area */}
@@ -259,7 +271,9 @@ export default function RoomPage() {
           placeholder={
             status !== 'connected'
               ? 'Connecting to WaitChat...'
-              : `Message #${room?.name ?? roomId}`
+              : isDm && dmPartnerName
+                ? `Message @${dmPartnerName}`
+                : `Message #${room?.name ?? roomId}`
           }
         />
       </div>

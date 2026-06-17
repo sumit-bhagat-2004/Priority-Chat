@@ -8,9 +8,11 @@ interface HeaderProps {
   onSettingsClick?: () => void;
   memberCount?: number;
   connectionStatus?: 'connecting' | 'connected' | 'disconnected' | 'error';
+  isDm?: boolean;
+  dmPartnerName?: string;
 }
 
-export function Header({ roomName, onMenuClick, onSettingsClick, memberCount, connectionStatus = 'disconnected' }: HeaderProps) {
+export function Header({ roomName, onMenuClick, onSettingsClick, memberCount, connectionStatus = 'disconnected', isDm, dmPartnerName }: HeaderProps) {
   const { theme, toggleTheme } = useThemeContext();
 
   const statusColor = {
@@ -58,7 +60,28 @@ export function Header({ roomName, onMenuClick, onSettingsClick, memberCount, co
 
       {/* Room name */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {roomName ? (
+        {isDm && dmPartnerName ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '14px', fontWeight: 700, color: '#080808', flexShrink: 0,
+            }}>
+              {dmPartnerName[0].toUpperCase()}
+            </div>
+            <div>
+              <h2 style={{
+                fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                letterSpacing: '-0.01em',
+              }}>
+                <span style={{ color: 'var(--gold)' }}>@</span>{dmPartnerName}
+              </h2>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Direct Message</p>
+            </div>
+          </div>
+        ) : roomName ? (
           <div>
             <h2 style={{
               fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)',

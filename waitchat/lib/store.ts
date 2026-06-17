@@ -50,6 +50,11 @@ const K = {
   messages: (roomId: string)=> `wc:msgs:${roomId}`,
 };
 
+// Deterministic DM room ID — sorted so Alice→Bob and Bob→Alice share the same room
+function dmRoomId(userIdA: string, userIdB: string): string {
+  return `dm:${[userIdA, userIdB].sort().join(':')}`;
+}
+
 // ─── Upstash Redis client (lazy singleton) ────────────────────────────────────
 type RedisClient = import('@upstash/redis').Redis;
 let _redis: RedisClient | null = null;
@@ -225,6 +230,35 @@ export const store = {
         room.memberIds.push(userId);
       }
     }
+  },
+
+  // ── DM Rooms ─────────────────────────────────────────────────────────────────
+
+  async getOrCreateDmRoom(userIdA: string, userIdB: string): Promise<Room> {
+    const id = dmRoomId(userIdA, userIdB);
+    const existing = await this.getRoom(id);
+    if (existing) return existing;
+
+    const userA = await this.getUser(userIdA);
+    const userB = await this.getUser(userIdB);
+    const room: Room = {
+      id,
+      name: `${userA?.name ?? userIdA} & ${userB?.name ?? userIdB}`,
+      createdAt: new Date().toISOString(),
+      memberIds: [userIdA, userIdB],
+      isGroup: false,
+      createdBy: userIdA,
+    };
+
+    const r = getRedis();
+    if (r) {
+      await r.set(K.room(id), room);
+      await r.sadd(K.rooms, id);
+    } else {
+      memRooms.set(id, room);
+      memMessages.set(id, []);
+    }
+    return room;
   },
 
   // ── Messages ─────────────────────────────────────────────────────────────────
