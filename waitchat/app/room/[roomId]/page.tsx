@@ -31,6 +31,7 @@ export default function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const [onlineCount, setOnlineCount] = useState<number>(1); // track real-time online users
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(true);
@@ -91,19 +92,20 @@ export default function RoomPage() {
     return () => clearTimeout(t);
   }, [visibleMessages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load room + messages
+  // Load room directly by ID (not by searching all rooms)
   useEffect(() => {
     if (!user || !roomId) return;
     setMessagesLoading(true);
 
-    fetch(`/api/rooms`, { credentials: 'include' })
-      .then(r => r.json())
+    // Fetch this specific room directly
+    fetch(`/api/rooms/${roomId}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
       .then(data => {
-        const found = data.rooms?.find((r: Room) => r.id === roomId);
-        if (found) setRoom(found);
+        if (data?.room) setRoom(data.room);
       })
       .catch(() => {});
 
+    // Fetch messages for this room
     fetch(`/api/rooms/${roomId}/messages`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -118,6 +120,22 @@ export default function RoomPage() {
     if (!user || !roomId || status !== 'connected') return;
 
     emit('room:join', { roomId, userId: user.id });
+
+    // Receive initial presence snapshot (users already in room)
+    const offPresence = on<{ onlineUserIds: string[] }>('user:presence', (data) => {
+      // +1 for self
+      setOnlineCount((data.onlineUserIds?.length ?? 0) + 1);
+    });
+
+    // Someone joined
+    const offJoined = on<{ id: string }>('user:joined', () => {
+      setOnlineCount(c => c + 1);
+    });
+
+    // Someone left
+    const offLeft = on<{ id: string }>('user:left', () => {
+      setOnlineCount(c => Math.max(1, c - 1));
+    });
 
     const offNewMsg = on<Message & { tempId?: string }>('message:new', (msg) => {
       setAllMessages(prev => {
@@ -147,6 +165,9 @@ export default function RoomPage() {
     });
 
     return () => {
+      offPresence();
+      offJoined();
+      offLeft();
       offNewMsg();
       offTyping();
       offReaction();
@@ -178,6 +199,16 @@ export default function RoomPage() {
     emit('reaction:add', { messageId, roomId, emoji, userId: user.id });
   }, [user, roomId, status, emit]);
 
+  // Derive DM info for display
+  const isDm = room !== null && room.isGroup === false;
+  const dmPartnerName = isDm && room && user
+    ? (() => {
+        // Room name is stored as "UserA & UserB"
+        const parts = room.name.split(' & ');
+        return parts.find(p => p.toLowerCase() !== user.name.toLowerCase()) ?? room.name;
+      })()
+    : undefined;
+
   if (userLoading) {
     return (
       <div style={{
@@ -191,16 +222,6 @@ export default function RoomPage() {
       </div>
     );
   }
-
-  // Derive DM partner for display
-  const isDm = room !== null && room.isGroup === false;
-  const dmPartnerName = isDm && room && user
-    ? (() => {
-        // Room name is stored as "UserA & UserB"
-        const parts = room.name.split(' & ');
-        return parts.find(p => p.toLowerCase() !== user.name.toLowerCase()) ?? room.name;
-      })()
-    : undefined;
 
   return (
     <div style={{
@@ -221,7 +242,7 @@ export default function RoomPage() {
           roomName={room?.name}
           onMenuClick={() => setSidebarOpen(true)}
           onSettingsClick={() => setSettingsOpen(s => !s)}
-          memberCount={isDm ? undefined : room?.memberIds?.length}
+          memberCount={isDm ? undefined : onlineCount}
           connectionStatus={status}
           isDm={isDm}
           dmPartnerName={dmPartnerName}
@@ -246,7 +267,7 @@ export default function RoomPage() {
           {/* Caught Up Indicator */}
           <CaughtUpIndicator trigger={flushTrigger} />
 
-          {/* Typing source indicator (dev/debug) */}
+          {/* Typing source indicator */}
           {isTyping && source && (
             <div style={{
               position: 'absolute', top: 8, right: 8,
@@ -290,7 +311,7 @@ export default function RoomPage() {
         />
       )}
 
-      {/* Settings panel overlay */}
+      {/* Mobile responsive styles */}
       <style>{`
         @media (max-width: 768px) {
           .menu-btn { display: flex !important; }

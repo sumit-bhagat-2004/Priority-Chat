@@ -91,8 +91,9 @@ export function Header({ roomName, onMenuClick, onSettingsClick, memberCount, co
               # {roomName}
             </h2>
             {memberCount !== undefined && (
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {memberCount} member{memberCount !== 1 ? 's' : ''}
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--online)', display: 'inline-block' }} />
+                {memberCount} online
               </p>
             )}
           </div>

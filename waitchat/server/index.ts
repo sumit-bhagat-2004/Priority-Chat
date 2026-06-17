@@ -47,10 +47,17 @@ const io = new Server(httpServer, {
 // ── Online / typing state (ephemeral — OK to lose on restart) ────────────────
 const onlineUsers = new Map<string, { userId: string; roomIds: Set<string> }>();
 const typingUsers = new Map<string, Set<string>>();
+// userId → socketId mapping for DM notifications
+const userSocketMap = new Map<string, string>(); // userId → socket.id
 
 // ── Socket handlers ───────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`[Socket] Connected: ${socket.id}`);
+
+  // ── Register user identity (called right after connect) ────────────────────
+  socket.on('user:register', ({ userId }: { userId: string }) => {
+    userSocketMap.set(userId, socket.id);
+  });
 
   // ── Room Join ───────────────────────────────────────────────────────────────
   socket.on('room:join', async ({ roomId, userId }: { roomId: string; userId: string }) => {
