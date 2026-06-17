@@ -7,7 +7,7 @@ import { useThemeContext } from '@/components/ThemeProvider';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { user, setUser, isLoading, refetch } = useUser();
+  const { user, setUser, isLoading } = useUser();
   const { theme, toggleTheme } = useThemeContext();
 
   const [name, setName] = useState('');
