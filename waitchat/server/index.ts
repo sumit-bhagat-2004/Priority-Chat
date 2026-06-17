@@ -2,6 +2,8 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { store } from '../lib/store';
+import { checkRateLimit } from '../lib/rateLimit';
+import { sanitizeText } from '../lib/sanitize';
 
 const PORT = parseInt(process.env.SOCKET_PORT ?? '3001', 10);
 const CLIENT_URL = process.env.CLIENT_URL ?? 'http://localhost:3000';
@@ -82,7 +84,17 @@ io.on('connection', (socket) => {
   socket.on('message:send', ({ roomId, userId, content, tempId }: {
     roomId: string; userId: string; content: string; tempId: string;
   }) => {
-    const msg = store.addMessage(roomId, userId, content.trim());
+    // Rate limit: 30 messages per minute per user
+    const rl = checkRateLimit(`msg:${userId}`, 30, 60 * 1000);
+    if (!rl.allowed) {
+      socket.emit('error', { code: 429, message: 'Too many messages. Please slow down.' });
+      return;
+    }
+
+    const sanitized = sanitizeText(content, 2000);
+    if (!sanitized) return;
+
+    const msg = store.addMessage(roomId, userId, sanitized);
     if (msg) {
       io.to(roomId).emit('message:new', { ...msg, tempId });
     }
