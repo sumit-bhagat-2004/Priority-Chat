@@ -3,7 +3,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  // Use server-side env var (no NEXT_PUBLIC_ prefix needed for server routes)
+  const socketUrl =
+    process.env.SOCKET_SERVER_URL ??         // server-only private var (preferred)
+    process.env.NEXT_PUBLIC_SOCKET_URL;      // fallback to public var
 
   if (!socketUrl || socketUrl.includes('localhost')) {
     return NextResponse.json({ skipped: true, reason: 'local dev — no ping needed' });
@@ -13,13 +16,13 @@ export async function GET() {
     const start = Date.now();
     const res = await fetch(`${socketUrl}/health`, {
       method: 'GET',
-      signal: AbortSignal.timeout(10_000), // 10s timeout
+      signal: AbortSignal.timeout(15_000), // 15s timeout — Render may be cold-starting
     });
     const elapsed = Date.now() - start;
 
     if (res.ok) {
-      const body = await res.json();
-      console.log(`[KeepAlive Cron] Socket server is alive (${elapsed}ms)`, body);
+      const body = await res.json().catch(() => ({}));
+      console.log(`[KeepAlive Cron] Socket server alive (${elapsed}ms)`, body);
       return NextResponse.json({ ok: true, elapsed, body });
     }
 

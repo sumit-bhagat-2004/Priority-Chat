@@ -7,7 +7,7 @@ import { useThemeContext } from '@/components/ThemeProvider';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { user, setUser, isLoading } = useUser();
+  const { user, setUser, isLoading, refetch } = useUser();
   const { theme, toggleTheme } = useThemeContext();
 
   const [name, setName] = useState('');
@@ -37,9 +37,11 @@ export default function LandingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed }),
+        credentials: 'include',  // ensure Set-Cookie is accepted
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Something went wrong'); return; }
+      // Set user in context immediately so UI updates, then navigate
       setUser(data.user);
       router.push('/room/general');
     } catch {

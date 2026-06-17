@@ -7,12 +7,14 @@ export function getSocket(): Socket {
   if (!socket) {
     const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:3001';
     socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      // Start with polling (works behind any proxy), then upgrade to WebSocket
+      transports: ['polling', 'websocket'],
       autoConnect: false,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 15,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelayMax: 8000,
+      timeout: 20000,
     });
   }
   return socket;

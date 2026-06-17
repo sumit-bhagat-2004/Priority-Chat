@@ -96,7 +96,7 @@ export default function RoomPage() {
     if (!user || !roomId) return;
     setMessagesLoading(true);
 
-    fetch(`/api/rooms`)
+    fetch(`/api/rooms`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
         const found = data.rooms?.find((r: Room) => r.id === roomId);
@@ -104,7 +104,7 @@ export default function RoomPage() {
       })
       .catch(() => {});
 
-    fetch(`/api/rooms/${roomId}/messages`)
+    fetch(`/api/rooms/${roomId}/messages`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.messages) setAllMessages(data.messages);

@@ -34,10 +34,12 @@ export async function POST(req: NextRequest) {
     const token = await store.createSession(user.id);
 
     const response = NextResponse.json({ user, token });
+    const isProd = process.env.NODE_ENV === 'production';
     response.cookies.set('waitchat-session', token, {
       httpOnly: true,
+      secure: isProd,          // HTTPS only in production
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24h
+      maxAge: 60 * 60 * 24,   // 24h
       path: '/',
     });
 

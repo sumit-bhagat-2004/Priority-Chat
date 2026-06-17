@@ -27,7 +27,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await fetch('/api/rooms');
+      const res = await fetch('/api/rooms', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setRooms(data.rooms ?? []);
@@ -45,6 +45,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newRoomName.trim() }),
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -68,6 +69,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUsername: target }),
+        credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok) {
