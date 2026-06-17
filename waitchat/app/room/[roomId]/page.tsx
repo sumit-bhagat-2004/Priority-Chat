@@ -12,6 +12,7 @@ import { MessageList } from '@/components/chat/MessageList';
 import { MessageInput } from '@/components/chat/MessageInput';
 import { HoldBadge } from '@/components/chat/HoldBadge';
 import { CaughtUpIndicator } from '@/components/chat/CaughtUpIndicator';
+import { SettingsPanel } from '@/components/chat/SettingsPanel';
 import type { Message, Room } from '@/lib/store';
 
 interface TypingUser {
@@ -31,6 +32,7 @@ export default function RoomPage() {
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [flushTrigger, setFlushTrigger] = useState(0);
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
@@ -51,6 +53,21 @@ export default function RoomPage() {
     idleTimeout,
     enableOSHeuristic,
   });
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault();
+        setSettingsOpen(s => !s);
+      }
+      if (e.key === 'Escape') {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   // Message queue (hold mechanic)
   const { visibleMessages, queuedCount, isHolding, flushNow } = useMessageQueue(
@@ -193,6 +210,7 @@ export default function RoomPage() {
         <Header
           roomName={room?.name}
           onMenuClick={() => setSidebarOpen(true)}
+          onSettingsClick={() => setSettingsOpen(s => !s)}
           memberCount={room?.memberIds?.length}
           connectionStatus={status}
         />
@@ -245,6 +263,18 @@ export default function RoomPage() {
           }
         />
       </div>
+
+      {/* Settings Panel */}
+      {settingsOpen && (
+        <SettingsPanel
+          idleTimeout={idleTimeout}
+          onIdleTimeoutChange={setIdleTimeout}
+          enableOSHeuristic={enableOSHeuristic}
+          onEnableOSHeuristicChange={setEnableOSHeuristic}
+          onFlushNow={() => { flushNow(); setSettingsOpen(false); }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
 
       {/* Settings panel overlay */}
       <style>{`

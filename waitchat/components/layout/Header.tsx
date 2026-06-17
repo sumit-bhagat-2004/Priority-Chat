@@ -5,11 +5,12 @@ import { useThemeContext } from '@/components/ThemeProvider';
 interface HeaderProps {
   roomName?: string;
   onMenuClick: () => void;
+  onSettingsClick?: () => void;
   memberCount?: number;
   connectionStatus?: 'connecting' | 'connected' | 'disconnected' | 'error';
 }
 
-export function Header({ roomName, onMenuClick, memberCount, connectionStatus = 'disconnected' }: HeaderProps) {
+export function Header({ roomName, onMenuClick, onSettingsClick, memberCount, connectionStatus = 'disconnected' }: HeaderProps) {
   const { theme, toggleTheme } = useThemeContext();
 
   const statusColor = {
@@ -100,6 +101,27 @@ export function Header({ roomName, onMenuClick, memberCount, connectionStatus = 
           {statusLabel}
         </span>
       </div>
+
+      {/* Settings button */}
+      {onSettingsClick && (
+        <button
+          id="settings-btn"
+          onClick={onSettingsClick}
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-full)',
+            padding: '6px 10px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            transition: 'all var(--transition-base)',
+            color: 'var(--text-secondary)',
+          }}
+          title="Settings"
+        >
+          ⚙
+        </button>
+      )}
 
       {/* Theme toggle */}
       <button
